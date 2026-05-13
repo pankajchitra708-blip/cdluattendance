@@ -34,7 +34,11 @@ npm start
 
 This repository includes `.github/workflows/deploy-github-pages.yml`. On every push to `main` or `master`, GitHub Actions builds the Vite app and deploys `dist` to GitHub Pages.
 
-Important: GitHub Pages is static hosting only. The Express/MongoDB API in `server.ts` must be hosted separately, for example on Render, Railway, or another Node host.
+By default, the GitHub Pages build runs as a static browser app. If `VITE_API_BASE_URL` is empty, the app stores users, courses, students, attendance records, and backups in the browser's `localStorage` under `cdlu_db_state`. This keeps the core attendance workflow working without a backend.
+
+Important: browser-local data is stored only on that device/browser. Use the Account Settings backup/export feature before clearing browser data or switching devices.
+
+If you want shared data across devices, host the Express/MongoDB API in `server.ts` separately, for example on Render, Railway, or another Node host.
 
 1. Host the backend and note its public URL, for example:
 

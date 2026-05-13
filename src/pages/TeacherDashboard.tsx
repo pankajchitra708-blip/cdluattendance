@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useAuth } from "../lib/auth";
-import { db, Course, User, AttendanceRecord } from "../lib/db";
+import { db, Course, User, AttendanceRecord, AttendanceSession } from "../lib/db";
 import { motion, AnimatePresence } from "motion/react";
 import { 
   Users, BookOpen, CheckCircle, Plus, Calendar as CalendarIcon, 
@@ -28,6 +28,8 @@ const isNewerAttendanceRecord = (candidate: AttendanceRecord, current?: Attendan
 
   return candidate.id.localeCompare(current.id) > 0;
 };
+
+type ReportSession = Pick<AttendanceSession, "id" | "date"> & Partial<AttendanceSession>;
 
 export default function TeacherDashboard() {
   const { user, login } = useAuth();
@@ -1175,7 +1177,7 @@ function AttendanceRecordsTab({ teacherId, onEditSession }: { teacherId: string;
 
   // States for course data
   const [students, setStudents] = useState<User[]>([]);
-  const [sessions, setSessions] = useState<any[]>([]); 
+  const [sessions, setSessions] = useState<ReportSession[]>([]); 
   const [attendanceRecords, setAttendanceRecords] = useState<AttendanceRecord[]>([]);
   const [courseStatsMap, setCourseStatsMap] = useState<Record<string, { students: number, sessions: number, avg: number }>>({});
 
@@ -1257,7 +1259,7 @@ function AttendanceRecordsTab({ teacherId, onEditSession }: { teacherId: string;
     return () => window.removeEventListener("attendance-updated", refresh);
   }, [drillDownCourseId, loadCourseData]);
 
-  const handleDownloadPDF = (course: Course, monthData?: { month: string, sessions: any[] }) => {
+  const handleDownloadPDF = (course: Course, monthData?: { month: string, sessions: ReportSession[] }) => {
     // sessions and students are now in state
     const sessionsForReport = [...(monthData ? monthData.sessions : sessions)]
       .sort((a, b) => a.date.localeCompare(b.date));
@@ -1273,13 +1275,13 @@ function AttendanceRecordsTab({ teacherId, onEditSession }: { teacherId: string;
       }
     });
 
-    const allSessionsInSet = Array.from(
+    const allSessionsInSet: ReportSession[] = Array.from(
       sessionsForReport.reduce((uniqueByDate, session) => {
         if (!uniqueByDate.has(session.date)) {
           uniqueByDate.set(session.date, session);
         }
         return uniqueByDate;
-      }, new Map<string, any>()).values()
+      }, new Map<string, ReportSession>()).values()
     );
     
     if (allSessionsInSet.length === 0) {
@@ -1393,7 +1395,7 @@ function AttendanceRecordsTab({ teacherId, onEditSession }: { teacherId: string;
     };
 
     // Calculate chunks of sessions for pagination
-    const sessionChunks = [];
+    const sessionChunks: ReportSession[][] = [];
     for (let i = 0; i < allSessionsInSet.length; i += maxDatesPerPage) {
       sessionChunks.push(allSessionsInSet.slice(i, i + maxDatesPerPage));
     }
