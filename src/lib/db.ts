@@ -49,6 +49,8 @@ export interface AttendanceRecord {
   courseId: string; // Redundant but helpful for legacy/quick queries
   date: string; // Redundant but helpful for legacy/quick queries
   status: "P" | "A" | "L"; // Present, Absent, Leave
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 // API-based Database client

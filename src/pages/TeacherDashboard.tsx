@@ -5,13 +5,29 @@ import { motion, AnimatePresence } from "motion/react";
 import { 
   Users, BookOpen, CheckCircle, Plus, Calendar as CalendarIcon, 
   ChevronRight, Save, X, Search, FileText, Clock, BarChart as BarChartIcon,
-  Settings, User as UserIcon, Copy, Check, LogOut, Eye, EyeOff, Lock
+  Settings, User as UserIcon, Copy, Check, LogOut, Eye, EyeOff, Lock, RotateCcw
 } from "lucide-react";
 import { format } from "date-fns";
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, 
   Legend, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell 
 } from "recharts";
+
+const getAttendanceRecordTime = (record: AttendanceRecord) => {
+  const rawTime = record.updatedAt || record.createdAt || "";
+  const time = rawTime ? new Date(rawTime).getTime() : 0;
+  return Number.isFinite(time) ? time : 0;
+};
+
+const isNewerAttendanceRecord = (candidate: AttendanceRecord, current?: AttendanceRecord) => {
+  if (!current) return true;
+
+  const candidateTime = getAttendanceRecordTime(candidate);
+  const currentTime = getAttendanceRecordTime(current);
+  if (candidateTime !== currentTime) return candidateTime > currentTime;
+
+  return candidate.id.localeCompare(current.id) > 0;
+};
 
 export default function TeacherDashboard() {
   const { user, login } = useAuth();
@@ -673,6 +689,13 @@ function AttendanceTab({ teacherId, editTarget, onEditTargetConsumed }: { teache
     setIsSaved(false);
   };
 
+  const resetFilteredStudents = () => {
+    const newAtt = { ...attendance };
+    filteredStudents.forEach(s => { newAtt[s.id] = null; });
+    setAttendance(newAtt);
+    setIsSaved(false);
+  };
+
   const handleSave = async () => {
     if (!selectedCourseId) return;
 
@@ -911,7 +934,15 @@ function AttendanceTab({ teacherId, editTarget, onEditTargetConsumed }: { teache
               className="w-full bg-white dark:bg-[#1e293b] border border-slate-200 dark:border-white/10 rounded-xl py-2.5 pl-10 pr-4 text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-blue-500 text-sm"
             />
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
+            <button 
+              type="button"
+              onClick={resetFilteredStudents}
+              className="flex items-center justify-center gap-1.5 px-4 sm:px-5 py-2 bg-slate-200 text-slate-700 text-xs font-black rounded-xl hover:bg-slate-300 dark:bg-slate-700 dark:text-slate-100 dark:hover:bg-slate-600 transition-all active:scale-95 shadow-lg shadow-slate-500/10"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              Reset
+            </button>
             <button 
               onClick={() => markFilteredStudents("P")}
               className="px-4 sm:px-5 py-2 bg-emerald-600 text-white text-xs font-black rounded-xl hover:bg-emerald-500 transition-all active:scale-95 shadow-lg shadow-emerald-500/20"
@@ -1228,8 +1259,28 @@ function AttendanceRecordsTab({ teacherId, onEditSession }: { teacherId: string;
 
   const handleDownloadPDF = (course: Course, monthData?: { month: string, sessions: any[] }) => {
     // sessions and students are now in state
-    const allSessionsInSet = [...(monthData ? monthData.sessions : sessions)]
+    const sessionsForReport = [...(monthData ? monthData.sessions : sessions)]
       .sort((a, b) => a.date.localeCompare(b.date));
+    const reportSessionIds = new Set(sessionsForReport.map(s => s.id));
+    const reportRecords = attendanceRecords.filter(r => reportSessionIds.has(r.sessionId));
+    const recordsByStudentAndDate = new Map<string, AttendanceRecord>();
+
+    reportRecords.forEach(record => {
+      const key = `${record.studentId}|${record.date}`;
+      const current = recordsByStudentAndDate.get(key);
+      if (isNewerAttendanceRecord(record, current)) {
+        recordsByStudentAndDate.set(key, record);
+      }
+    });
+
+    const allSessionsInSet = Array.from(
+      sessionsForReport.reduce((uniqueByDate, session) => {
+        if (!uniqueByDate.has(session.date)) {
+          uniqueByDate.set(session.date, session);
+        }
+        return uniqueByDate;
+      }, new Map<string, any>()).values()
+    );
     
     if (allSessionsInSet.length === 0) {
       alert("No attendance records found for this period.");
@@ -1358,20 +1409,18 @@ function AttendanceRecordsTab({ teacherId, onEditSession }: { teacherId: string;
 
       // Table Data
       const tableRows = students.map(student => {
-        const studentRecs = attendanceRecords.filter(r => r.studentId === student.id);
-        
         // Overall stats (always calculated for total sessions in current report period)
         let totalP = 0;
         let totalA = 0;
         allSessionsInSet.forEach(s => {
-          const r = studentRecs.find(rec => rec.sessionId === s.id);
+          const r = recordsByStudentAndDate.get(`${student.id}|${s.date}`);
           if (r?.status === 'P') totalP++;
           if (r?.status === 'A') totalA++;
         });
 
         // Row values for current page's dates
         const sessionStatus = chunk.map(s => {
-          const r = studentRecs.find(rec => rec.sessionId === s.id);
+          const r = recordsByStudentAndDate.get(`${student.id}|${s.date}`);
           return r ? r.status : "-";
         });
 
