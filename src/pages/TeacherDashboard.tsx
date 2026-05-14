@@ -237,7 +237,7 @@ function OverviewTab({ teacherId }: { teacherId: string; key?: string }) {
         // A better API endpoint would be helpful, but using existing ones:
         // Actually, we'll need a way to get attendance for all courses at once.
         // For now, let's keep it simple or implement a new API.
-        // server.ts has /api/attendance?studentId=... or courseId=...
+        // Browser storage keeps attendance indexed by student and course.
         const allRecords: AttendanceRecord[] = [];
         for (const c of teacherCourses) {
           const records = await db.getAttendanceByCourseAndDate(c.id, ""); // "" as date to get all for course

@@ -1,6 +1,6 @@
 # CDLU Attendance System
 
-A full-stack attendance management app built with React, Vite, Express, and MongoDB.
+A Vite + React attendance management app made for static hosting on GitHub Pages.
 
 ## Local Setup
 
@@ -10,67 +10,39 @@ A full-stack attendance management app built with React, Vite, Express, and Mong
    npm install
    ```
 
-2. Create `.env` from `.env.example` and add your MongoDB Atlas URI:
-
-   ```env
-   MONGODB_URI=your_mongodb_connection_string
-   PORT=3000
-   ```
-
-3. Start the development server:
+2. Start the local Vite server:
 
    ```bash
    npm run dev
    ```
 
-## Production Build
+3. Create a production build:
 
-```bash
-npm run build
-npm start
+   ```bash
+   npm run build
+   ```
+
+## GitHub Pages Deployment
+
+This repository includes `.github/workflows/deploy-github-pages.yml`.
+
+On every push to `main` or `master`, GitHub Actions builds the Vite app and deploys `dist` to GitHub Pages.
+
+To enable it in GitHub:
+
+1. Open the repository on GitHub.
+2. Go to `Settings > Pages`.
+3. Set `Source` to `GitHub Actions`.
+4. Push to `main`, or run the workflow manually from the `Actions` tab.
+
+Live URL format:
+
+```txt
+https://pankajchitra708-blip.github.io/cdluattendance/
 ```
 
-## GitHub Pages Static Deployment
+## Data Storage
 
-This repository includes `.github/workflows/deploy-github-pages.yml`. On every push to `main` or `master`, GitHub Actions builds the Vite app and deploys `dist` to GitHub Pages.
-
-By default, the GitHub Pages build runs as a static browser app. If `VITE_API_BASE_URL` is empty, the app stores users, courses, students, attendance records, and backups in the browser's `localStorage` under `cdlu_db_state`. This keeps the core attendance workflow working without a backend.
+This app is frontend-only. It stores users, courses, students, attendance records, and backups in the browser's `localStorage` under `cdlu_db_state`.
 
 Important: browser-local data is stored only on that device/browser. Use the Account Settings backup/export feature before clearing browser data or switching devices.
-
-If you want shared data across devices, host the Express/MongoDB API in `server.ts` separately, for example on Render, Railway, or another Node host.
-
-1. Host the backend and note its public URL, for example:
-
-   ```txt
-   https://your-backend.onrender.com
-   ```
-
-2. In GitHub, go to `Settings > Secrets and variables > Actions > Variables` and add:
-
-   ```txt
-   VITE_API_BASE_URL=https://your-backend.onrender.com
-   ```
-
-3. Go to `Settings > Pages` and set `Source` to `GitHub Actions`.
-
-4. Push to `main` or run the workflow manually from the Actions tab.
-
-The GitHub Pages build uses hash routing so refreshes and nested routes work on static hosting.
-
-## Render Settings
-
-Use these settings when creating the Render Web Service:
-
-```txt
-Build Command: npm install && npm run build
-Start Command: npm start
-```
-
-Environment variables:
-
-```txt
-NODE_ENV=production
-MONGODB_URI=your_mongodb_connection_string
-CORS_ORIGIN=https://your-username.github.io
-```

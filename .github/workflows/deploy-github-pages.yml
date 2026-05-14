@@ -38,7 +38,6 @@ jobs:
           GITHUB_PAGES: "true"
           VITE_GITHUB_PAGES: "true"
           VITE_BASE_PATH: /${{ github.event.repository.name }}/
-          VITE_API_BASE_URL: ${{ vars.VITE_API_BASE_URL }}
 
       - name: Disable Jekyll
         run: touch dist/.nojekyll
